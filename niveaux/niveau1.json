@@ -1,4 +1,6 @@
 {
+    "nom": "Niveau 1",
+    "lien": "#1",
     "dimensions": [80, 40],
     "delay": 200,
     "walls": [

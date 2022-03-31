@@ -1,29 +1,61 @@
+//Constantes
+const TAILLE_CASE = 50;
+const EMPTY = 0;
+const SNAKE_BODY = 1;
+const SNAKE_HEAD = 2;
+const FOOD = 3;
+//Pas de façon simple de récupérer une liste de fichiers en vanilla JS
+const NB_NIVEAUX = 1;
+
 var zone = document.getElementById("zoneJeu");
 
 //Appelé quand la partie interne de l'url change
 window.addEventListener("hashchange", function() {
-
+    //Récupère le n° de niveau dans l'url
+    var numNiv = this.window.location.href.split("#")[1];
+    //Repasser à l'accueil si il n'y a pas de n°
+    if(numNiv === undefined){
+        retourAccueil();
+    }
+    console.log("Niveau "+numNiv);
+    //Lance le niveau à partir de son numéro
+    lireNiveau(numNiv);
 });
 
-function lireNiveau(num){
+function afficheListeNiveaux(){
+    var listeNv = document.getElementById("listeNiveaux");
+    for(let i = 1; i <= NB_NIVEAUX; i++) {
+        var textNiv=document.createElement('li');
+        var urlNiv=document.createElement('a');
+
+        textNiv.textContent = "Niveau "+i;
+        urlNiv.setAttribute("href", "#"+i);
+
+        urlNiv.appendChild(textNiv);
+        listeNv.appendChild(urlNiv);
+    }
+}
+
+async function lireNiveau(num){
     var reqNiveau = new XMLHttpRequest();
-    var url="Niveaux/niveau"+num+".json";
+    var url="niveaux/niveau"+num+".json";
     reqNiveau.open("GET", url);
     reqNiveau.onerror = function() {
         console.log("Erreur du chargement de l'url " + url);
     };
     reqNiveau.onload = function() {
         if(reqNiveau.status == 200){
-            console.log("Chargement du chapitre");
+            console.log(url);
+            console.log("Chargement du niveau "+num);
             var data = JSON.parse(reqNiveau.responseText);
-            affichageChapitre(data);
+            affichageNiveau(data);
         } else {
             console.log("Erreur du chargement du niveau");
         }
     };
     reqNiveau.send();
 }
-
+/*
 function affichageNiveau(data){
     document.getElementById("paragraphe").textContent = data.txt;
     var ll = document.getElementById("listeLiens");
@@ -33,17 +65,17 @@ function affichageNiveau(data){
     }
     //Crée et ajoute les liens à afficher dans la liste des liens
     data.links.forEach(link => {
-        var textLien=document.createElement('li');
+        var textNiv=document.createElement('li');
         var urlLien=document.createElement('a');
 
-        textLien.textContent = link.txt;
+        textNiv.textContent = link.txt;
         urlLien.setAttribute("href", link.link);
 
-        urlLien.appendChild(textLien);
+        urlLien.appendChild(textNiv);
         ll.appendChild(urlLien);
     });
 }
-
+*/
 function init(tab, dif){
     var i, j;
     for (i=0; i<dif; i++) {
@@ -61,12 +93,12 @@ function dessinerZoneJeu(largeur, hauteur, padding) {
     zone.setAttribute("width", lCanvas);
     zone.setAttribute("height", hCanvas);
 
-    for (var x = 0; x <= lCanvas; x += 40) {
+    for (var x = 0; x <= lCanvas; x += TAILLE_CASE) {
         context.moveTo(0.5 + x + padding, padding);
         context.lineTo(0.5 + x + padding, hCanvas + padding);
     }
 
-    for (var x = 0; x <= hCanvas; x += 40) {
+    for (var x = 0; x <= hCanvas; x += TAILLE_CASE) {
         context.moveTo(padding, 0.5 + x + padding);
         context.lineTo(lCanvas + padding, 0.5 + x + padding);
     }
@@ -78,4 +110,6 @@ function retourAccueil() {
     zone.style.display = "none";
 }
 //Les paramètres doivent etre des multiples de 40
-dessinerZoneJeu(400, 400, 0);
+dessinerZoneJeu(TAILLE_CASE*10, TAILLE_CASE*10, 0);
+afficheListeNiveaux();
+//console.log(niveaux);

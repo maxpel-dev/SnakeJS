@@ -4,18 +4,25 @@ const EMPTY = 0;
 const SNAKE_BODY = 1;
 const SNAKE_HEAD = 2;
 const FOOD = 3;
+//Directions
+const DIR_HAUT = "haut";
+const DIR_BAS = "bas";
+const DIR_GAUCHE = "gauche";
+const DIR_DROITE = "droite";
 //Pas de façon simple de récupérer une liste de fichiers en vanilla JS
 const NB_NIVEAUX = 3;
+//Variables globales
 var WORLD;
+var SNAKE = [[],[]];
+var score = 0;
+var direction = DIR_HAUT;
+var input;
 
 var zone = document.getElementById("zoneJeu");
 var context = zone.getContext('2d');
-generationNiveau(10, 10, TAILLE_CASE);
-dessinerNourriture(0,0, 6)
-dessinerQueue(1, 1, 3);
-dessinerTete(1, 2, 0);
+//generationNiveau(10, 10, TAILLE_CASE);
 
-//--------------------FONCTIONS DE MENU--------------------\\
+//------------------------FONCTIONS DE MENU------------------------\\
 //Appelé quand la partie interne de l'url change
 window.addEventListener("hashchange", function() {
     //Récupère le n° de niveau dans l'url
@@ -44,7 +51,7 @@ function afficheListeNiveaux(){
 }
 
 function retourAccueil() {
-    zone.style.display = "none";
+    reinitialiserNiveau();
 }
 //---------------FONCTIONS DE GENERATION DU NIVEAU CHOISI---------------\\
 function lireNiveau(num){
@@ -68,13 +75,81 @@ function lireNiveau(num){
 }
 
 function placementElements(data) {
-    
+    reinitialiserNiveau();
+    generationNiveau(data.dimensions[0], data.dimensions[1], TAILLE_CASE);
+    data.food.forEach(f => {
+        console.log(f);
+        placerNourriture(f[0], f[1]);
+    });
+    data.snake.forEach(function callback(s, index) {
+        //console.log(index);
+        if(index == 0) {
+            placerTete(s[0], s[1]);
+        } else {
+            placerQueue(s[0], s[1], index);
+        }
+        direction = DIR_HAUT;
+    });
+    var tick = setInterval(data.delay, step());
+}
+
+function step() {
+    //Vérifier un input utilisateur
+    checkDirection();
+    //Calculer la nouvelle position de la tête du serpent en fonction de sa direction
+    changePosition(direction, snake)
+    //Vérifier si la tête du serpent rencontre de la nourriture, un mur, ou un morceau de son corps.
+    var grandir = checkCollision();
+    /*Mettre à jour le tableau SNAKE en faisant avancer le serpent ;
+     S’il a mangé de la nourriture, son corps doit s’allonger 
+    (ce qui revient à ne pas réduire sa queue). 
+    Mettre également à jour le tableau WORLD en conséquence.
+    */
+    majTabSnake();
+    //Effacer intégralement le canvas, et re-dessiner l’état de WORLD.
+    redessiner();
+}
+
+function checkDirection() {
+
 }
 
 function generationNiveau(nbCasesL, nbCasesH, tailleCases) {
     dessinerZoneJeu(tailleCases*nbCasesL, tailleCases*nbCasesH, 0);
     var WORLD = genererWorldVide(nbCasesL, nbCasesH);
     console.log(WORLD);
+}
+
+//---------------ECOUTEURS D'INPUTS CLAVIER---------------\\
+document.addEventListener('keydown', function(event) {
+    /*L'entrée clavir n'est prise en compte que si elle ne correspond pas à
+    l'opposé de la direction actuelle */
+    if(event.key == "ArrowUp" && direction != DIR_BAS) input = DIR_HAUT;
+    if(event.key == "ArrowDown" && direction != DIR_HAUT) input = DIR_BAS;
+    if(event.key == "ArrowLeft" && direction != DIR_DROITE) input = DIR_GAUCHE;
+    if(event.key == "ArrowRight" && direction != DIR_GAUCHE) input = DIR_DROITE;
+});
+
+
+//---------------FONCTIONS DE PLACEMENT D'ELEMENTS DE CASES---------------\\
+function reinitialiserNiveau() {
+    context.clearRect(0, 0, zone.width, zone.height);
+    zone.style.display = "none";
+}
+
+function placerTete(x, y) {
+    WORLD[x][y] = SNAKE_HEAD;
+    SNAKE[0] = [x, y];
+    dessinerTete(x, y, 0);
+}
+function placerQueue(x, y, section) {
+    WORLD[x][y] = SNAKE_BODY;
+    SNAKE[section] = [x, y];
+    dessinerQueue(x, y, TAILLE_CASE/10);
+}
+function placerNourriture(x, y) {
+    WORLD[x][y] = FOOD;
+    dessinerNourriture(x, y, TAILLE_CASE/5);
 }
 
 //---------------FONCTIONS DE DESSIN/AFFCHAGE---------------\\
@@ -126,7 +201,7 @@ function dessinerNourriture(x, y, pad) {
 //---------------FONCTIONS DE GESTION DES CASES---------------\\
 function genererWorldVide(x, y) {
     let i, j;
-    let WORLD = new Array(i);
+    WORLD = new Array(i);
     for (i=0; i<x; i++) {
         WORLD[i] = new Array(j);
         for(j=0; j<y; j++) {

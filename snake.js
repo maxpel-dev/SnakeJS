@@ -5,10 +5,17 @@ const SNAKE_BODY = 1;
 const SNAKE_HEAD = 2;
 const FOOD = 3;
 //Pas de façon simple de récupérer une liste de fichiers en vanilla JS
-const NB_NIVEAUX = 1;
+const NB_NIVEAUX = 3;
+var WORLD;
 
 var zone = document.getElementById("zoneJeu");
+var context = zone.getContext('2d');
+generationNiveau(10, 10, TAILLE_CASE);
+dessinerNourriture(0,0, 6)
+dessinerQueue(1, 1, 3);
+dessinerTete(1, 2, 0);
 
+//--------------------FONCTIONS DE MENU--------------------\\
 //Appelé quand la partie interne de l'url change
 window.addEventListener("hashchange", function() {
     //Récupère le n° de niveau dans l'url
@@ -36,7 +43,11 @@ function afficheListeNiveaux(){
     }
 }
 
-async function lireNiveau(num){
+function retourAccueil() {
+    zone.style.display = "none";
+}
+//---------------FONCTIONS DE GENERATION DU NIVEAU CHOISI---------------\\
+function lireNiveau(num){
     var reqNiveau = new XMLHttpRequest();
     var url="niveaux/niveau"+num+".json";
     reqNiveau.open("GET", url);
@@ -48,41 +59,25 @@ async function lireNiveau(num){
             console.log(url);
             console.log("Chargement du niveau "+num);
             var data = JSON.parse(reqNiveau.responseText);
-            affichageNiveau(data);
+            placementElements(data);
         } else {
             console.log("Erreur du chargement du niveau");
         }
     };
     reqNiveau.send();
 }
-/*
-function affichageNiveau(data){
-    document.getElementById("paragraphe").textContent = data.txt;
-    var ll = document.getElementById("listeLiens");
-    //Supprime les liens à ne plus afficher
-    while(ll.firstChild){
-        ll.removeChild(ll.firstChild);
-    }
-    //Crée et ajoute les liens à afficher dans la liste des liens
-    data.links.forEach(link => {
-        var textNiv=document.createElement('li');
-        var urlLien=document.createElement('a');
 
-        textNiv.textContent = link.txt;
-        urlLien.setAttribute("href", link.link);
-
-        urlLien.appendChild(textNiv);
-        ll.appendChild(urlLien);
-    });
-}
-*/
-function init(tab, dif){
-    var i, j;
-    for (i=0; i<dif; i++) {
-        var tmp = [];
-    }
+function placementElements(data) {
+    
 }
 
+function generationNiveau(nbCasesL, nbCasesH, tailleCases) {
+    dessinerZoneJeu(tailleCases*nbCasesL, tailleCases*nbCasesH, 0);
+    var WORLD = genererWorldVide(nbCasesL, nbCasesH);
+    console.log(WORLD);
+}
+
+//---------------FONCTIONS DE DESSIN/AFFCHAGE---------------\\
 function dessinerZoneJeu(largeur, hauteur, padding) {
     zone.style.display = "";
     var context = zone.getContext('2d');
@@ -106,10 +101,40 @@ function dessinerZoneJeu(largeur, hauteur, padding) {
     context.stroke();
 }
 
-function retourAccueil() {
-    zone.style.display = "none";
+function dessinerQueue(x, y, pad) {
+    context.fillStyle='#067508';
+    context.fillRect(TAILLE_CASE*(x)+pad, TAILLE_CASE*(y)+pad, //Position du coin supérieur gauche
+     TAILLE_CASE-pad*2+1, TAILLE_CASE-pad*2+1); //Largeur et Hauteur
 }
-//Les paramètres doivent etre des multiples de 40
-dessinerZoneJeu(TAILLE_CASE*10, TAILLE_CASE*10, 0);
+
+function dessinerTete(x, y, pad) {
+    dessinerQueue(x, y, pad); //Pour différencier la tête de la queue, le padding
+                              //passé en paramètre est plus faible pour la tête
+}
+
+function dessinerNourriture(x, y, pad) {
+    context.beginPath();
+    context.arc(TAILLE_CASE*(x+0.5)+0.5, TAILLE_CASE*(y+0.5)+0.5, //Position du centre
+     TAILLE_CASE/2-pad, 0, 2 * Math.PI); //Taille et angle (cercle entier)
+    context.fillStyle = '#d10a0a';
+    context.fill();
+    context.lineWidth = 2;
+    context.strokeStyle = '#000000';
+    context.stroke();
+}
+
+//---------------FONCTIONS DE GESTION DES CASES---------------\\
+function genererWorldVide(x, y) {
+    let i, j;
+    let WORLD = new Array(i);
+    for (i=0; i<x; i++) {
+        WORLD[i] = new Array(j);
+        for(j=0; j<y; j++) {
+            WORLD[i][j] = EMPTY;
+        }
+    }
+    return WORLD;
+}
+
+
 afficheListeNiveaux();
-//console.log(niveaux);

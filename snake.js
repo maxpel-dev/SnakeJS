@@ -4,6 +4,7 @@ const EMPTY = 0;
 const SNAKE_BODY = 1;
 const SNAKE_HEAD = 2;
 const FOOD = 3;
+const WALL = 4;
 //Directions
 const DIR_HAUT = "haut";
 const DIR_BAS = "bas";
@@ -16,7 +17,8 @@ var WORLD;
 var SNAKE = [[],[]];
 var score = 0;
 var direction = DIR_HAUT;
-var input;
+var tick;
+var prochaine_case = [2];
 
 var zone = document.getElementById("zoneJeu");
 var context = zone.getContext('2d');
@@ -78,11 +80,9 @@ function placementElements(data) {
     reinitialiserNiveau();
     generationNiveau(data.dimensions[0], data.dimensions[1], TAILLE_CASE);
     data.food.forEach(f => {
-        console.log(f);
         placerNourriture(f[0], f[1]);
     });
     data.snake.forEach(function callback(s, index) {
-        //console.log(index);
         if(index == 0) {
             placerTete(s[0], s[1]);
         } else {
@@ -90,14 +90,14 @@ function placementElements(data) {
         }
         direction = DIR_HAUT;
     });
-    var tick = setInterval(data.delay, step());
+    //Lancement de l'écoulement du temps de jeu
+    tick = setInterval(step, data.delay);
 }
 
 function step() {
-    //Vérifier un input utilisateur
-    checkDirection();
+    //Vérifier un input utilisateur : voir section écouteurs
     //Calculer la nouvelle position de la tête du serpent en fonction de sa direction
-    changePosition(direction, snake)
+    checkDirection();
     //Vérifier si la tête du serpent rencontre de la nourriture, un mur, ou un morceau de son corps.
     var grandir = checkCollision();
     /*Mettre à jour le tableau SNAKE en faisant avancer le serpent ;
@@ -105,13 +105,83 @@ function step() {
     (ce qui revient à ne pas réduire sa queue). 
     Mettre également à jour le tableau WORLD en conséquence.
     */
-    majTabSnake();
+    majTabSnake(grandir);
     //Effacer intégralement le canvas, et re-dessiner l’état de WORLD.
-    redessiner();
+    //redessiner();
+}
+
+function gameOver() {
+    //Arrêter l'écoulement du temps de jeu
+    clearInterval(tick);
+}
+
+function majTabSnake(grandir) {
+    placerQueue(SNAKE[0][0], SNAKE[0][1], 0);
+    SNAKE.unshift([prochaine_case[0], prochaine_case[1]]);
+    placerTete(prochaine_case[0], prochaine_case[1]);
+
+    if(!grandir) {
+        let finQueue = SNAKE[SNAKE.length-1];
+        placerVide(finQueue[0], finQueue[1]);
+        SNAKE.pop();
+    } else {
+        nouvelleNourriture();
+    }
 }
 
 function checkDirection() {
+    switch(direction) {
+        case DIR_HAUT:
+            prochaine_case[0] = SNAKE[0][0];
+            prochaine_case[1] = SNAKE[0][1]-1;
+            break;
+        case DIR_BAS:
+            prochaine_case[0] = SNAKE[0][0];
+            prochaine_case[1] = SNAKE[0][1]+1;
+            break;
+        case DIR_GAUCHE:
+            prochaine_case[0] = SNAKE[0][0]-1;
+            prochaine_case[1] = SNAKE[0][1];
+            break;
+        case DIR_DROITE:
+            prochaine_case[0] = SNAKE[0][0]+1;
+            prochaine_case[1] = SNAKE[0][1];
+            break;
+        default:
+            console.log("Erreur : direction non définie");
+    }
+}
 
+//Retourne true si le serpent grandit, false sinon
+function checkCollision() {
+    let pro_x = prochaine_case[0];
+    let pro_y = prochaine_case[1];
+    if(WORLD[pro_x][pro_y] == undefined
+        || WORLD[pro_x][pro_y] == SNAKE_BODY
+        || WORLD[pro_x][pro_y] == WALL) {
+            console.log("Game Over");
+            gameOver();
+    } else if (WORLD[pro_x][pro_y] == FOOD) {
+        console.log("Nourriture mangée");
+        return true;
+    }
+    return false;
+}
+
+
+function nouvelleNourriture() {
+    let placement = false;
+    //Prend une case aléatoire jusqu'à en trouver une non vide
+    while(placement == false) {
+        let rand_x = Math.floor(Math.random() * WORLD.length);
+        let rand_y = Math.floor(Math.random() * WORLD[0].length);
+        console.log("Coordonnées aléatoires : "+ rand_x + ", " + rand_y);
+        //Si la case est vide, place la nourriture et sort de la boucle
+        if(WORLD[rand_x][rand_y] == EMPTY) {
+            placerNourriture(rand_x, rand_y);
+            placement = true;
+        }
+    }
 }
 
 function generationNiveau(nbCasesL, nbCasesH, tailleCases) {
@@ -124,10 +194,10 @@ function generationNiveau(nbCasesL, nbCasesH, tailleCases) {
 document.addEventListener('keydown', function(event) {
     /*L'entrée clavir n'est prise en compte que si elle ne correspond pas à
     l'opposé de la direction actuelle */
-    if(event.key == "ArrowUp" && direction != DIR_BAS) input = DIR_HAUT;
-    if(event.key == "ArrowDown" && direction != DIR_HAUT) input = DIR_BAS;
-    if(event.key == "ArrowLeft" && direction != DIR_DROITE) input = DIR_GAUCHE;
-    if(event.key == "ArrowRight" && direction != DIR_GAUCHE) input = DIR_DROITE;
+    if(event.key == "ArrowUp" && direction != DIR_BAS) direction = DIR_HAUT;
+    if(event.key == "ArrowDown" && direction != DIR_HAUT) direction = DIR_BAS;
+    if(event.key == "ArrowLeft" && direction != DIR_DROITE) direction = DIR_GAUCHE;
+    if(event.key == "ArrowRight" && direction != DIR_GAUCHE) direction = DIR_DROITE;
 });
 
 
@@ -140,19 +210,28 @@ function reinitialiserNiveau() {
 function placerTete(x, y) {
     WORLD[x][y] = SNAKE_HEAD;
     SNAKE[0] = [x, y];
-    dessinerTete(x, y, 0);
+    dessinerTete(x, y, 1);
 }
 function placerQueue(x, y, section) {
     WORLD[x][y] = SNAKE_BODY;
     SNAKE[section] = [x, y];
+    dessinerVide(x, y);
     dessinerQueue(x, y, TAILLE_CASE/10);
 }
 function placerNourriture(x, y) {
     WORLD[x][y] = FOOD;
     dessinerNourriture(x, y, TAILLE_CASE/5);
 }
+function placerVide(x, y) {
+    WORLD[x][y] = EMPTY;
+    dessinerVide(x, y);
+}
 
-//---------------FONCTIONS DE DESSIN/AFFCHAGE---------------\\
+function supprimerFinQueue() {
+
+}
+
+//---------------FONCTIONS DE DESSIN/AFFICHAGE---------------\\
 function dessinerZoneJeu(largeur, hauteur, padding) {
     zone.style.display = "";
     var context = zone.getContext('2d');
@@ -174,6 +253,12 @@ function dessinerZoneJeu(largeur, hauteur, padding) {
     }
     context.strokeStyle = "black";
     context.stroke();
+}
+
+function dessinerVide(x, y) {
+    context.fillStyle='#FFFFFF';
+    context.fillRect(TAILLE_CASE*(x)+1, TAILLE_CASE*(y)+1, //Position du coin supérieur gauche
+     TAILLE_CASE-1, TAILLE_CASE-1);
 }
 
 function dessinerQueue(x, y, pad) {

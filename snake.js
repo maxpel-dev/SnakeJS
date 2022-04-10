@@ -163,7 +163,7 @@ function majSnake(grandir) {
         placerVide(finQueue[0], finQueue[1]);
         SNAKE.pop();
     } else {
-        additionScore(10);
+        additionScore(50);
         nouvelleNourriture();
     }
 }

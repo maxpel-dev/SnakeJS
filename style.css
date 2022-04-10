@@ -2,3 +2,31 @@
     background: #fff;
     margin: 20px;
 }
+
+#score {
+    display: none;
+}
+
+#msgGameOver {
+    color: red;
+    font-style: italic;
+    display: none;
+}
+
+#zoneJeu {
+    padding: 0;
+    margin: auto;
+    display: block;
+}
+
+body {
+    text-align: center;
+    padding: 0;
+    margin: auto;
+    display: block;
+}
+
+ul {
+    list-style: none;
+    list-style-position: inside;
+}

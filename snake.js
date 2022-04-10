@@ -1,28 +1,35 @@
 //Constantes
-const TAILLE_CASE = 50;
 const EMPTY = 0;
 const SNAKE_BODY = 1;
 const SNAKE_HEAD = 2;
 const FOOD = 3;
 const WALL = 4;
 //Directions
+var direction;
+var tmp_dir;
 const DIR_HAUT = "haut";
 const DIR_BAS = "bas";
 const DIR_GAUCHE = "gauche";
 const DIR_DROITE = "droite";
+//Etats du jeu
+var ETAT_JEU;
+const MENU = -1;
+const GAME_OVER = 0;
+const RUNNING = 1;
+//TODO implémenter un système de pause
+const PAUSE = 2
 //Pas de façon simple de récupérer une liste de fichiers en vanilla JS
 const NB_NIVEAUX = 3;
 //Variables globales
 var WORLD;
 var SNAKE = [[],[]];
-var score = 0;
-var direction = DIR_HAUT;
-var tick;
+var TAILLE_CASE = 30;
 var prochaine_case = [2];
-
+var score = 0;
+var tick;
+//Récupère le canvas et son contexte pour pouvoir dessiner dessus
 var zone = document.getElementById("zoneJeu");
 var context = zone.getContext('2d');
-//generationNiveau(10, 10, TAILLE_CASE);
 
 //------------------------FONCTIONS DE MENU------------------------\\
 //Appelé quand la partie interne de l'url change
@@ -30,30 +37,41 @@ window.addEventListener("hashchange", function() {
     //Récupère le n° de niveau dans l'url
     var numNiv = this.window.location.href.split("#")[1];
     //Repasser à l'accueil si il n'y a pas de n°
-    if(numNiv === undefined){
+    if(numNiv == undefined || numNiv == 0){
         retourAccueil();
+    } else {
+        console.log("Niveau "+numNiv);
+        cacherListeNiveaux();
+        //Lance le niveau à partir de son numéro
+        lireNiveau(numNiv);
     }
-    console.log("Niveau "+numNiv);
-    //Lance le niveau à partir de son numéro
-    lireNiveau(numNiv);
 });
 
 function afficheListeNiveaux(){
-    var listeNv = document.getElementById("listeNiveaux");
+    let listeNv = document.getElementById("listeNiveaux");
     for(let i = 1; i <= NB_NIVEAUX; i++) {
-        var textNiv=document.createElement('li');
-        var urlNiv=document.createElement('a');
+        let textNiv=document.createElement('li');
+        let urlNiv=document.createElement('a');
+        let boutonNiv=document.createElement('button');
 
         textNiv.textContent = "Niveau "+i;
         urlNiv.setAttribute("href", "#"+i);
-
+        
         urlNiv.appendChild(textNiv);
-        listeNv.appendChild(urlNiv);
+        boutonNiv.appendChild(urlNiv);
+        listeNv.appendChild(boutonNiv);
     }
+}
+
+function cacherListeNiveaux() {
+    document.getElementById("listeNiveaux").style.display = "none";
 }
 
 function retourAccueil() {
     reinitialiserNiveau();
+    document.getElementById("listeNiveaux").style.display = "block";
+    document.getElementById("msgGameOver").style.display = "none";
+    document.getElementById("UIJeu").style.display = "none";
 }
 //---------------FONCTIONS DE GENERATION DU NIVEAU CHOISI---------------\\
 function lireNiveau(num){
@@ -90,32 +108,41 @@ function placementElements(data) {
         }
         direction = DIR_HAUT;
     });
+    //Direction initiale dans le fichier json
+    direction = data.direction;
+    ETAT_JEU = RUNNING;
+    document.getElementById("UIJeu").style.display = "";
+    document.getElementById("score").style.display = "block";
     //Lancement de l'écoulement du temps de jeu
     tick = setInterval(step, data.delay);
 }
 
+function generationNiveau(nbCasesL, nbCasesH, tailleCases) {
+    dessinerGrilleJeu(tailleCases*nbCasesL, tailleCases*nbCasesH, 0);
+    var WORLD = genererWorldVide(nbCasesL, nbCasesH);
+    console.log(WORLD);
+}
+
+//-------------------------LOGIQUE DE JEU-------------------------\\
 function step() {
     //Vérifier un input utilisateur : voir section écouteurs
     //Calculer la nouvelle position de la tête du serpent en fonction de sa direction
+    tmp_dir = direction;
     checkDirection();
     //Vérifier si la tête du serpent rencontre de la nourriture, un mur, ou un morceau de son corps.
-    var grandir = checkCollision();
-    /*Mettre à jour le tableau SNAKE en faisant avancer le serpent ;
-     S’il a mangé de la nourriture, son corps doit s’allonger 
-    (ce qui revient à ne pas réduire sa queue). 
-    Mettre également à jour le tableau WORLD en conséquence.
+    let grandir = checkCollision();
+    /*
+    Mise à jour du tableau et de l'affichage du serpent
+    Mes fonctions de mise à jour de tableau SNAKE et WORLD appellent elles-même 
+    les fonctions de mise à jour visuelle, donc il est plus cohérent d'utliser 
+    une même fonction pour la mise à jour simultanée "back" et "front"
     */
-    majTabSnake(grandir);
-    //Effacer intégralement le canvas, et re-dessiner l’état de WORLD.
-    //redessiner();
+   if(ETAT_JEU != GAME_OVER) {
+        majSnake(grandir);
+   }
 }
 
-function gameOver() {
-    //Arrêter l'écoulement du temps de jeu
-    clearInterval(tick);
-}
-
-function majTabSnake(grandir) {
+function majSnake(grandir) {
     placerQueue(SNAKE[0][0], SNAKE[0][1], 0);
     SNAKE.unshift([prochaine_case[0], prochaine_case[1]]);
     placerTete(prochaine_case[0], prochaine_case[1]);
@@ -125,6 +152,7 @@ function majTabSnake(grandir) {
         placerVide(finQueue[0], finQueue[1]);
         SNAKE.pop();
     } else {
+        additionScore(10);
         nouvelleNourriture();
     }
 }
@@ -152,14 +180,14 @@ function checkDirection() {
     }
 }
 
-//Retourne true si le serpent grandit, false sinon
+//Retourne true si le serpent doir grandir, false sinon
 function checkCollision() {
     let pro_x = prochaine_case[0];
     let pro_y = prochaine_case[1];
-    if(WORLD[pro_x][pro_y] == undefined
+    if( pro_x < 0 || pro_y < 0
+        || pro_x >= WORLD.length || pro_y >= WORLD.length
         || WORLD[pro_x][pro_y] == SNAKE_BODY
         || WORLD[pro_x][pro_y] == WALL) {
-            console.log("Game Over");
             gameOver();
     } else if (WORLD[pro_x][pro_y] == FOOD) {
         console.log("Nourriture mangée");
@@ -168,43 +196,44 @@ function checkCollision() {
     return false;
 }
 
-
-function nouvelleNourriture() {
-    let placement = false;
-    //Prend une case aléatoire jusqu'à en trouver une non vide
-    while(placement == false) {
-        let rand_x = Math.floor(Math.random() * WORLD.length);
-        let rand_y = Math.floor(Math.random() * WORLD[0].length);
-        console.log("Coordonnées aléatoires : "+ rand_x + ", " + rand_y);
-        //Si la case est vide, place la nourriture et sort de la boucle
-        if(WORLD[rand_x][rand_y] == EMPTY) {
-            placerNourriture(rand_x, rand_y);
-            placement = true;
-        }
-    }
+function gameOver() {
+    //Arrêter l'écoulement du temps de jeu
+    clearInterval(tick);
+    ETAT_JEU = GAME_OVER;
+    document.getElementById("msgGameOver").style.display = "block";
 }
 
-function generationNiveau(nbCasesL, nbCasesH, tailleCases) {
-    dessinerZoneJeu(tailleCases*nbCasesL, tailleCases*nbCasesH, 0);
-    var WORLD = genererWorldVide(nbCasesL, nbCasesH);
-    console.log(WORLD);
+function additionScore(valeur) {
+    score += valeur;
+    rafraichirScore(score);
 }
 
-//---------------ECOUTEURS D'INPUTS CLAVIER---------------\\
+//--------------------ECOUTEURS D'ENTREES CLAVIER--------------------\\
 document.addEventListener('keydown', function(event) {
-    /*L'entrée clavir n'est prise en compte que si elle ne correspond pas à
-    l'opposé de la direction actuelle */
-    if(event.key == "ArrowUp" && direction != DIR_BAS) direction = DIR_HAUT;
-    if(event.key == "ArrowDown" && direction != DIR_HAUT) direction = DIR_BAS;
-    if(event.key == "ArrowLeft" && direction != DIR_DROITE) direction = DIR_GAUCHE;
-    if(event.key == "ArrowRight" && direction != DIR_GAUCHE) direction = DIR_DROITE;
+    /*L'entrée clavier n'est prise en compte que si elle ne correspond pas à
+    l'opposé de la direction actuelle 
+    Mise en mémore tampon de la direction actuelle pour éviter que le serpent
+    fasse demi-tour sur lui-même si les entrées clavier sont suffisamment rapides*/
+    if(event.key == "ArrowUp" && tmp_dir != DIR_BAS) direction = DIR_HAUT;
+    if(event.key == "ArrowDown" && tmp_dir != DIR_HAUT) direction = DIR_BAS;
+    if(event.key == "ArrowLeft" && tmp_dir != DIR_DROITE) direction = DIR_GAUCHE;
+    if(event.key == "ArrowRight" && tmp_dir != DIR_GAUCHE) direction = DIR_DROITE;
 });
 
 
 //---------------FONCTIONS DE PLACEMENT D'ELEMENTS DE CASES---------------\\
 function reinitialiserNiveau() {
+    //Réinitialise les variables globales
+    WORLD = [];
+    SNAKE = [[],[]];
+    prochaine_case = [2];
+    additionScore(-score);
+    clearInterval(tick);
+    //Nettoie et cache le canvas
     context.clearRect(0, 0, zone.width, zone.height);
     zone.style.display = "none";
+    //Cache le score
+    document.getElementById("score").style.display = "none";
 }
 
 function placerTete(x, y) {
@@ -227,12 +256,27 @@ function placerVide(x, y) {
     dessinerVide(x, y);
 }
 
-function supprimerFinQueue() {
-
+function nouvelleNourriture() {
+    let placement = false;
+    //Prend une case aléatoire jusqu'à en trouver une vide
+    while(placement == false) {
+        let rand_x = Math.floor(Math.random() * WORLD.length);
+        let rand_y = Math.floor(Math.random() * WORLD[0].length);
+        //Si la case est vide, place la nourriture et sort de la boucle
+        if(WORLD[rand_x][rand_y] == EMPTY) {
+            placerNourriture(rand_x, rand_y);
+            placement = true;
+        }
+    }
 }
 
 //---------------FONCTIONS DE DESSIN/AFFICHAGE---------------\\
-function dessinerZoneJeu(largeur, hauteur, padding) {
+function rafraichirScore(nouvScore) {
+    let nbScore = document.getElementById("nbScore");
+    nbScore.textContent = nouvScore;
+}
+
+function dessinerGrilleJeu(largeur, hauteur, padding) {
     zone.style.display = "";
     var context = zone.getContext('2d');
 
@@ -295,6 +339,5 @@ function genererWorldVide(x, y) {
     }
     return WORLD;
 }
-
 
 afficheListeNiveaux();

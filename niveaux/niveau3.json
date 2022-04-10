@@ -1,11 +1,11 @@
 {
     "nom": "Niveau 2",
     "lien": "#2",
-    "dimensions": [30, 15],
+    "dimensions": [40, 15],
     "taille_case": 20,
-    "delay": 200,
+    "delay": 160,
     "walls": [
-        [5,5], [5,6], [5,7], [5,8]
+        
     ],
     "food": [
         [10,10],

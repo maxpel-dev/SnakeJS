@@ -75,15 +75,10 @@ function afficheListeNiveaux(){
     }
 }
 
-function cacherListeNiveaux() {
-    document.getElementById("listeNiveaux").style.display = "none";
-}
 
 function retourAccueil() {
     reinitialiserNiveau();
-    document.getElementById("listeNiveaux").style.display = "block";
-    document.getElementById("msgGameOver").style.display = "none";
-    document.getElementById("UIJeu").style.display = "none";
+    affichageAccueil();
 }
 //---------------FONCTIONS DE GENERATION DU NIVEAU CHOISI---------------\\
 function lireNiveau(num){
@@ -108,10 +103,14 @@ function lireNiveau(num){
 
 function placementElements(data) {
     reinitialiserNiveau();
+    TAILLE_CASE = data.taille_case;
     generationNiveau(data.dimensions[0], data.dimensions[1], TAILLE_CASE);
     data.food.forEach(f => {
         placerNourriture(f[0], f[1]);
     });
+    data.walls.forEach(w => {
+        placerMur(w[0], w[1]);
+    })
     data.snake.forEach(function callback(s, index) {
         if(index == 0) {
             placerTete(s[0], s[1]);
@@ -120,7 +119,6 @@ function placementElements(data) {
         }
         direction = DIR_HAUT;
     });
-    //Direction initiale dans le fichier json
     direction = data.direction;
     ETAT_JEU = RUNNING;
     document.getElementById("UIJeu").style.display = "";
@@ -152,6 +150,7 @@ function step() {
    if(ETAT_JEU != GAME_OVER) {
         majSnake(grandir);
    }
+   additionScore(1);
 }
 
 function majSnake(grandir) {
@@ -233,7 +232,7 @@ document.addEventListener('keydown', function(event) {
 });
 
 
-//---------------FONCTIONS DE PLACEMENT D'ELEMENTS DE CASES---------------\\
+//---------------FONCTIONS DE GESTION DES CASES---------------\\
 function reinitialiserNiveau() {
     //Réinitialise les variables globales
     WORLD = [];
@@ -246,6 +245,18 @@ function reinitialiserNiveau() {
     zone.style.display = "none";
     //Cache le score
     document.getElementById("score").style.display = "none";
+}
+
+function genererWorldVide(x, y) {
+    let i, j;
+    WORLD = new Array(i);
+    for (i=0; i<x; i++) {
+        WORLD[i] = new Array(j);
+        for(j=0; j<y; j++) {
+            WORLD[i][j] = EMPTY;
+        }
+    }
+    return WORLD;
 }
 
 function placerTete(x, y) {
@@ -262,6 +273,10 @@ function placerQueue(x, y, section) {
 function placerNourriture(x, y) {
     WORLD[x][y] = FOOD;
     dessinerNourriture(x, y, TAILLE_CASE/5);
+}
+function placerMur(x, y) {
+    WORLD[x][y] = WALL;
+    dessinerMur(x, y);
 }
 function placerVide(x, y) {
     WORLD[x][y] = EMPTY;
@@ -286,6 +301,16 @@ function nouvelleNourriture() {
 function rafraichirScore(nouvScore) {
     let nbScore = document.getElementById("nbScore");
     nbScore.textContent = nouvScore;
+}
+
+function cacherListeNiveaux() {
+    document.getElementById("listeNiveaux").style.display = "none";
+}
+
+function affichageAccueil() {
+    document.getElementById("listeNiveaux").style.display = "block";
+    document.getElementById("msgGameOver").style.display = "none";
+    document.getElementById("UIJeu").style.display = "none";
 }
 
 function dessinerGrilleJeu(largeur, hauteur, padding) {
@@ -317,6 +342,12 @@ function dessinerVide(x, y) {
      TAILLE_CASE-1, TAILLE_CASE-1);
 }
 
+function dessinerMur(x, y) {
+    context.fillStyle='#2f2833';
+    context.fillRect(TAILLE_CASE*(x)+1, TAILLE_CASE*(y)+1, //Position du coin supérieur gauche
+     TAILLE_CASE-1, TAILLE_CASE-1);
+}
+
 function dessinerQueue(x, y, pad) {
     context.fillStyle='#067508';
     context.fillRect(TAILLE_CASE*(x)+pad, TAILLE_CASE*(y)+pad, //Position du coin supérieur gauche
@@ -331,25 +362,12 @@ function dessinerTete(x, y, pad) {
 function dessinerNourriture(x, y, pad) {
     context.beginPath();
     context.arc(TAILLE_CASE*(x+0.5)+0.5, TAILLE_CASE*(y+0.5)+0.5, //Position du centre
-     TAILLE_CASE/2-pad, 0, 2 * Math.PI); //Taille et angle (cercle entier)
+     TAILLE_CASE/2-pad, 0, 2 * Math.PI); //Taille et angle (2*PI = cercle entier)
     context.fillStyle = '#d10a0a';
     context.fill();
     context.lineWidth = 2;
     context.strokeStyle = '#000000';
     context.stroke();
-}
-
-//---------------FONCTIONS DE GESTION DES CASES---------------\\
-function genererWorldVide(x, y) {
-    let i, j;
-    WORLD = new Array(i);
-    for (i=0; i<x; i++) {
-        WORLD[i] = new Array(j);
-        for(j=0; j<y; j++) {
-            WORLD[i][j] = EMPTY;
-        }
-    }
-    return WORLD;
 }
 
 afficheListeNiveaux();

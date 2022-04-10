@@ -1,3 +1,15 @@
+/* Maxime Peloutier
+
+    Le code a été pensé pour être le plus modulaire possible,
+notamment via la séparation des fonctions de logique et d'affichage.
+    Des modifications on été apportées aux fichiers json pour ajouter
+quelques propriétés supplémentaires, comme la direction initiale
+et la taille des cases, et faciliter leur édition via un système de 
+coordonnées au format [x, y] :
+ - plus x est élevé, plus l'élément sera placé vers la droite,
+ - plus y est élevé, plus l'élément sera placé vers le bas.
+*/
+
 //Constantes
 const EMPTY = 0;
 const SNAKE_BODY = 1;

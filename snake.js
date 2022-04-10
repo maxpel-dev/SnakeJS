@@ -1,4 +1,4 @@
-/* Maxime Peloutier
+/* Maxime Peloutier - https://iutdoua-web.univ-lyon1.fr/~p1802439/js-snake/index.html
 
     Le code a été pensé pour être le plus modulaire possible,
 notamment via la séparation des fonctions de logique et d'affichage.

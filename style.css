@@ -1,35 +1,97 @@
 #zoneJeu {
-    background: #fff;
-    margin: 20px;
+  background: #fff;
+  margin: 20px;
 }
 
 #score {
-    display: none;
+  display: none;
 }
 
 #msgGameOver {
-    color: red;
-    font-style: italic;
-    display: none;
+  color: red;
+  font-style: italic;
+  display: none;
 }
 
 #zoneJeu {
-    padding: 0;
-    margin: auto;
-    display: block;
+  padding: 0;
+  margin: auto;
+  display: block;
 }
 
 body {
-    text-align: center;
-    padding: 0;
-    margin: auto;
-    display: block;
-    font-family: 'Raleway',sans-serif; 
+  text-align: center;
+  padding: 0;
+  margin: auto;
+  display: block;
+  font-family: "Raleway", sans-serif;
 }
 
 ul {
-    padding: 0;
-    list-style-type: none;
-    list-style: none;
-    list-style-position: inside;
+  padding: 0;
+  list-style-type: none;
+  list-style: none;
+  list-style-position: inside;
+}
+
+button {
+  position: relative;
+  height: 50px;
+  margin-left: 1rem;
+  margin-right: 1rem;
+  padding: 0 30px;
+  border: 2px solid #000;
+  background: #e8e8e8;
+  user-select: none;
+  white-space: nowrap;
+  transition: all 0.05s linear;
+  font-family: inherit;
+}
+
+button:before,
+button:after {
+  content: "";
+  position: absolute;
+  background: #e8e8e8;
+  transition: all 0.2s linear;
+}
+
+button:before {
+  width: calc(100% + 6px);
+  height: calc(100% - 16px);
+  top: 8px;
+  left: -3px;
+}
+
+button:after {
+  width: calc(100% - 16px);
+  height: calc(100% + 6px);
+  top: -3px;
+  left: 8px;
+}
+
+button:hover {
+  cursor: crosshair;
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+button:hover:before {
+  height: calc(100% - 32px);
+  top: 16px;
+}
+
+button:hover:after {
+  width: calc(100% - 32px);
+  left: 16px;
+}
+
+li {
+	text-decoration:none;
+  font-size: 20px;
+  z-index: 3;
+  position: relative;
+  font-weight: 600;
 }
